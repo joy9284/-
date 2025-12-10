@@ -1,150 +1,43 @@
 <!DOCTYPE html>
 <html lang="zh-TW">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta charset="UTF-8">
 <title>下午茶轉盤</title>
 <style>
-  body { font-family: sans-serif; background:#f7f7f7; margin:0; padding:20px; }
-  .container { max-width:900px; margin:auto; }
-  .panel, .wheel-box { background:#fff; padding:20px; border-radius:16px; box-shadow:0 2px 10px #0001; }
-  .row { display:flex; gap:12px; margin-top:10px; }
-  input[type=text] { flex:1; padding:8px; border-radius:8px; border:1px solid #ccc; }
-  button { padding:8px 12px; border:none; border-radius:8px; cursor:pointer; }
-  .wheel { width:320px; height:320px; border-radius:50%; margin:auto; position:relative; transition:transform 4s cubic-bezier(0.25, 0.1, 0.25, 1); box-shadow:0 0 10px #0002; }
-  .pointer { width:0; height:0; border-left:12px solid transparent; border-right:12px solid transparent; border-bottom:20px solid red; position:absolute; top:-22px; left:50%; transform:translateX(-50%); }
-  .result { text-align:center; margin-top:10px; font-size:20px; font-weight:bold; }
-  .list { max-height:150px; overflow-y:auto; margin-top:10px; }
-  .item { display:flex; align-items:center; gap:8px; margin-bottom:6px; }
-  .color-dot { width:10px; height:10px; border-radius:50%; }
-  .delete-btn { background:#fee; color:#d33; padding:4px 8px; }
+  body {
+    font-family: "Arial", sans-serif;
+    background: #FFF8F5;
+    text-align: center;
+    padding: 40px;
+    color: #555;
+  }
+  #wheel {
+    margin-top: 30px;
+  }
+  input, button {
+    padding: 8px 12px;
+    margin: 8px;
+    border-radius: 8px;
+    border: 1px solid #ddd;
+    background: white;
+  }
+  button {
+    cursor: pointer;
+    background: #F5D0C5;
+    border: none;
+  }
 </style>
 </head>
 <body>
-<div class="container">
-  <h1>下午茶轉盤 🎡</h1>
 
-  <div class="row" style="align-items:flex-start;">
-    <!-- 控制面板 -->
-    <div class="panel" style="flex:1;">
-      <h3>新增選項</h3>
-      <div class="row">
-        <input id="input" type="text" placeholder="輸入選項..." />
-        <button onclick="addOption()" style="background:#4da3ff; color:white;">新增</button>
-      </div>
+<h2>🥤 可愛低飽和・下午茶轉盤 🎡</h2>
 
-      <h3 style="margin-top:20px;">選項清單</h3>
-      <div id="list" class="list"></div>
+<input id="itemInput" placeholder="加入新選項">
+<button onclick="addItem()">新增</button>
+<button onclick="resetItems()">清除所有選項</button>
 
-      <div class="row" style="margin-top:14px;">
-        <button onclick="spin()" style="flex:1; background:#38c172; color:white;">開始轉</button>
-        <button onclick="clearOptions()">清空</button>
-      </div>
-    </div>
+<p>目前選項：</p>
+<ul id="itemList"></ul>
 
-    <!-- 轉盤區 -->
-    <div class="wheel-box" style="flex:1; text-align:center;">
-      <div class="pointer"></div>
-      <div id="wheel" class="wheel"></div>
-      <div id="result" class="result"></div>
-    </div>
-  </div>
-</div>
+<canv
 
-<script>
-const KEY = "tea-wheel-options-v1";
-const COLORS = ["#F97316", "#F43F5E", "#7C3AED", "#0EA5E9", "#10B981", "#F59E0B", "#06B6D4", "#60A5FA"]; 
-let options = [];
-let spinDeg = 0;
-let spinning = false;
-
-// 初始讀取
-load();
-render();
-updateWheel();
-
-function save() { localStorage.setItem(KEY, JSON.stringify(options)); }
-function load() {
-  const raw = localStorage.getItem(KEY);
-  if (raw) options = JSON.parse(raw);
-  if (!Array.isArray(options) || options.length === 0)
-    options = ["珍珠奶茶", "水果茶", "蛋糕", "小點心"]; 
-}
-
-function addOption() {
-  const input = document.getElementById("input");
-  const val = input.value.trim();
-  if (!val) return;
-  options.push(val);
-  input.value = "";
-  save(); render(); updateWheel();
-}
-
-function deleteOption(i) {
-  options.splice(i,1);
-  save(); render(); updateWheel();
-}
-
-function editOption(i, val) {
-  options[i] = val;
-  save(); updateWheel();
-}
-
-function clearOptions() {
-  if (confirm("確定要清空所有選項？")) {
-    options = [];
-    save(); render(); updateWheel();
-  }
-}
-
-// 渲染列表
-function render() {
-  const list = document.getElementById("list");
-  list.innerHTML = options.map((opt,i)=>`
-    <div class="item">
-      <div class="color-dot" style="background:${COLORS[i % COLORS.length]}"></div>
-      <input value="${opt}" oninput="editOption(${i}, this.value)" style="flex:1; padding:4px;" />
-      <button class="delete-btn" onclick="deleteOption(${i})">刪除</button>
-    </div>
-  `).join("");
-}
-
-// 生成轉盤
-function updateWheel() {
-  const wheel = document.getElementById("wheel");
-  if (options.length === 0) {
-    wheel.style.background = "#eee";
-    return;
-  }
-  const size = 100 / options.length;
-  const parts = options.map((_,i)=>`${COLORS[i % COLORS.length]} ${i*size}% ${(i+1)*size}%`).join(", ");
-  wheel.style.background = `conic-gradient(${parts})`;
-}
-
-// 抽
-function spin() {
-  if (spinning || options.length === 0) return;
-  spinning = true;
-  document.getElementById("result").innerHTML = "";
-
-  const rounds = Math.floor(Math.random()*4)+3;
-  const offset = Math.random()*360;
-  const addDeg = rounds*360 + offset;
-  spinDeg += addDeg;
-
-  const wheel = document.getElementById("wheel");
-  wheel.style.transform = `rotate(${spinDeg}deg)`;
-
-  const slice = 360 / options.length;
-
-  const final = (360 - (addDeg % 360) + 90) % 360;
-  const index = Math.floor(final / slice) % options.length;
-
-  setTimeout(()=>{
-    spinning = false;
-    document.getElementById("result").innerHTML = `結果：${options[index]}`;
-  }, 4200);
-}
-</script>
-</body>
-</html>
