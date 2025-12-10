@@ -30,7 +30,7 @@
 </head>
 <body>
 
-<h2>🥤 可愛低飽和・下午茶轉盤 🎡</h2>
+<h2>🥤 下午茶轉盤 🎡</h2>
 
 <input id="itemInput" placeholder="加入新選項">
 <button onclick="addItem()">新增</button>
@@ -39,5 +39,88 @@
 <p>目前選項：</p>
 <ul id="itemList"></ul>
 
-<canv
+<canvas id="wheel" width="400" height="400"></canvas><br>
+<button onclick="spin()">轉！</button>
 
+<script>
+let items = JSON.parse(localStorage.getItem("wheelItems")) || ["珍奶", "紅茶拿鐵"];
+const listDOM = document.getElementById("itemList");
+const canvas = document.getElementById("wheel");
+const ctx = canvas.getContext("2d");
+
+// 🌈 可愛低飽和色系
+const pastelColors = [
+  "#F7EDE2", // 奶油米白
+  "#F5D0C5", // 淡粉
+  "#EAD7E8", // 淡紫
+  "#D8E2DC", // 薄荷灰綠
+  "#FFE5EC", // 粉霧玫瑰
+  "#F6F5F2", // 霧白灰
+  "#E8E8F1"  // 淡藍灰
+];
+
+function save() {
+  localStorage.setItem("wheelItems", JSON.stringify(items));
+}
+
+function renderList() {
+  listDOM.innerHTML = "";
+  items.forEach((item, i) => {
+    const li = document.createElement("li");
+    li.textContent = item;
+    listDOM.appendChild(li);
+  });
+}
+
+function drawWheel() {
+  const total = items.length;
+  const angle = (2 * Math.PI) / total;
+
+  for (let i = 0; i < total; i++) {
+    ctx.beginPath();
+    ctx.fillStyle = pastelColors[i % pastelColors.length];
+    ctx.moveTo(200, 200);
+    ctx.arc(200, 200, 200, i * angle, (i + 1) * angle);
+    ctx.fill();
+
+    // 顯示文字
+    ctx.save();
+    ctx.translate(200, 200);
+    ctx.rotate(i * angle + angle / 2);
+    ctx.textAlign = "right";
+    ctx.fillStyle = "#555";
+    ctx.font = "16px Arial";
+    ctx.fillText(items[i], 180, 5);
+    ctx.restore();
+  }
+}
+
+function addItem() {
+  const val = document.getElementById("itemInput").value.trim();
+  if (!val) return;
+  items.push(val);
+  save();
+  renderList();
+  drawWheel();
+  document.getElementById("itemInput").value = "";
+}
+
+function resetItems() {
+  items = [];
+  save();
+  renderList();
+  ctx.clearRect(0, 0, 400, 400);
+}
+
+function spin() {
+  const rand = Math.random() * 360 + 2000;
+  canvas.style.transition = "transform 4s ease-out";
+  canvas.style.transform = `rotate(${rand}deg)`;
+}
+
+renderList();
+drawWheel();
+</script>
+
+</body>
+</html>
