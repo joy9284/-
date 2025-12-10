@@ -5,59 +5,101 @@
 <title>下午茶轉盤</title>
 <style>
   body {
-    font-family: "Arial", sans-serif;
+    font-family: Arial, sans-serif;
     background: #FFF8F5;
+    padding: 20px;
     text-align: center;
-    padding: 40px;
     color: #555;
   }
-  #wheel {
-    margin-top: 30px;
+  #container {
+    display: flex;
+    justify-content: center;
+    gap: 20px;
+    flex-wrap: wrap;
   }
-  input, button {
-    padding: 8px 12px;
-    margin: 8px;
+  #controlPanel {
+    min-width: 200px;
+    background: #fff;
+    padding: 16px;
+    border-radius: 16px;
+    box-shadow: 0 2px 10px #0001;
+  }
+  #controlPanel input, #controlPanel button {
+    padding: 6px 10px;
+    margin: 4px 0;
     border-radius: 8px;
     border: 1px solid #ddd;
-    background: white;
   }
-  button {
+  #controlPanel button {
     cursor: pointer;
     background: #F5D0C5;
     border: none;
+    color: #555;
+  }
+  #itemList {
+    list-style: none;
+    padding: 0;
+    max-height: 180px;
+    overflow-y: auto;
+  }
+  #itemList li {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 4px;
+  }
+  #wheelBox {
+    position: relative;
+  }
+  #wheel {
+    width: 400px;
+    height: 400px;
+    border-radius: 50%;
+    transition: transform 4s cubic-bezier(0.25, 0.1, 0.25, 1);
+  }
+  .pointer {
+    width: 0; 
+    height: 0; 
+    border-left: 12px solid transparent;
+    border-right: 12px solid transparent;
+    border-bottom: 24px solid red;
+    position: absolute;
+    top: -24px;
+    left: 50%;
+    transform: translateX(-50%);
   }
 </style>
 </head>
 <body>
 
-<h2>🥤 下午茶轉盤 🎡</h2>
+<h2>🥤 可愛低飽和下午茶轉盤 🎡</h2>
 
-<input id="itemInput" placeholder="加入新選項">
-<button onclick="addItem()">新增</button>
-<button onclick="resetItems()">清除所有選項</button>
+<div id="container">
+  <div id="controlPanel">
+    <input id="itemInput" placeholder="新增選項">
+    <button onclick="addItem()">新增</button>
+    <button onclick="resetItems()">清空所有</button>
+    <ul id="itemList"></ul>
+  </div>
 
-<p>目前選項：</p>
-<ul id="itemList"></ul>
-
-<canvas id="wheel" width="400" height="400"></canvas><br>
-<button onclick="spin()">轉！</button>
+  <div id="wheelBox">
+    <div class="pointer"></div>
+    <canvas id="wheel" width="400" height="400"></canvas>
+    <br>
+    <button onclick="spin()">轉！</button>
+  </div>
+</div>
 
 <script>
-let items = JSON.parse(localStorage.getItem("wheelItems")) || ["珍奶", "紅茶拿鐵"];
+let items = JSON.parse(localStorage.getItem("wheelItems")) || ["珍奶","紅茶拿鐵"];
 const listDOM = document.getElementById("itemList");
 const canvas = document.getElementById("wheel");
 const ctx = canvas.getContext("2d");
 
-// 🌈 可愛低飽和色系
-const pastelColors = [
-  "#F7EDE2", // 奶油米白
-  "#F5D0C5", // 淡粉
-  "#EAD7E8", // 淡紫
-  "#D8E2DC", // 薄荷灰綠
-  "#FFE5EC", // 粉霧玫瑰
-  "#F6F5F2", // 霧白灰
-  "#E8E8F1"  // 淡藍灰
-];
+// 可愛低飽和色系
+const pastelColors = ["#F7EDE2","#F5D0C5","#EAD7E8","#D8E2DC","#FFE5EC","#F6F5F2","#E8E8F1"];
+
+let spinDeg = 0;
+let spinning = false;
 
 function save() {
   localStorage.setItem("wheelItems", JSON.stringify(items));
@@ -67,57 +109,75 @@ function renderList() {
   listDOM.innerHTML = "";
   items.forEach((item, i) => {
     const li = document.createElement("li");
-    li.textContent = item;
+    li.innerHTML = `<span>${item}</span> <button onclick="deleteItem(${i})">刪除</button>`;
     listDOM.appendChild(li);
   });
 }
 
 function drawWheel() {
+  ctx.clearRect(0, 0, 400, 400);
   const total = items.length;
+  if(total === 0){
+    ctx.fillStyle="#aaa";
+    ctx.font="20px Arial";
+    ctx.textAlign="center";
+    ctx.fillText("請新增選項來開始轉盤 🎡",200,200);
+    return;
+  }
   const angle = (2 * Math.PI) / total;
-
-  for (let i = 0; i < total; i++) {
+  for(let i=0;i<total;i++){
     ctx.beginPath();
     ctx.fillStyle = pastelColors[i % pastelColors.length];
-    ctx.moveTo(200, 200);
-    ctx.arc(200, 200, 200, i * angle, (i + 1) * angle);
+    ctx.moveTo(200,200);
+    ctx.arc(200,200,200,i*angle,(i+1)*angle);
     ctx.fill();
 
     // 顯示文字
     ctx.save();
-    ctx.translate(200, 200);
-    ctx.rotate(i * angle + angle / 2);
+    ctx.translate(200,200);
+    ctx.rotate(i*angle + angle/2);
     ctx.textAlign = "right";
-    ctx.fillStyle = "#555";
-    ctx.font = "16px Arial";
-    ctx.fillText(items[i], 180, 5);
+    ctx.fillStyle="#555";
+    ctx.font="16px Arial";
+    ctx.fillText(items[i],180,5);
     ctx.restore();
   }
 }
 
-function addItem() {
+function addItem(){
   const val = document.getElementById("itemInput").value.trim();
-  if (!val) return;
+  if(!val) return;
   items.push(val);
+  document.getElementById("itemInput").value="";
   save();
   renderList();
   drawWheel();
-  document.getElementById("itemInput").value = "";
 }
 
-function resetItems() {
-  items = [];
+function deleteItem(index){
+  items.splice(index,1);
   save();
   renderList();
-  ctx.clearRect(0, 0, 400, 400);
+  drawWheel();
 }
 
-function spin() {
-  const rand = Math.random() * 360 + 2000;
-  canvas.style.transition = "transform 4s ease-out";
-  canvas.style.transform = `rotate(${rand}deg)`;
+function resetItems(){
+  items=[];
+  save();
+  renderList();
+  drawWheel();
 }
 
+function spin(){
+  if(spinning || items.length===0) return;
+  spinning=true;
+  const rand = Math.random()*360 + 2000;
+  spinDeg += rand;
+  canvas.style.transform = `rotate(${spinDeg}deg)`;
+  setTimeout(()=>{spinning=false;},4200);
+}
+
+// 初始畫面
 renderList();
 drawWheel();
 </script>
